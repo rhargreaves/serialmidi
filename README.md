@@ -1,3 +1,4 @@
+# serialmidi
 
 This command line script establishes Serial to MIDI bridge.
 It will be useful with micro controller boards such as Arduino, ESP32, they only have UART-USB interface.
@@ -25,18 +26,22 @@ WINDOWS example
 $ python.exe .\serialmidi.py --serial_name=COM4 --midi_in_name="loopMIDI Port IN 0" --midi_out_name="loopMIDI Port OUT 2"
 ```
 
+## Everdrive PRO Mode
+
+This fork adds support for sending MIDI messages to the Mega Everdrive PRO via the [Mega Drive MIDI Interface project](https://github.com/rhargreaves/mega-drive-midi-interface) (see `--everdrive_pro` below).
+
 ## setup
 
 1. Run `serialmidi.py -h` to see this help.
 ```
 $ python3 serialmidi.py -h
 usage: serialmidi.py [-h] --serial_name SERIAL_NAME [--baud BAUD]
-                     [--midi_in_name MIDI_IN_NAME]
-                     [--midi_out_name MIDI_OUT_NAME] [--debug]
+                     [--midi_in_name MIDI_IN_NAME] [--midi_out_name MIDI_OUT_NAME]
+                     [--debug] [--string] [--everdrive_pro]
 
 Serial MIDI bridge
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --serial_name SERIAL_NAME
                         Serial port name. Required
@@ -44,6 +49,8 @@ optional arguments:
   --midi_in_name MIDI_IN_NAME
   --midi_out_name MIDI_OUT_NAME
   --debug               Print incoming / outgoing MIDI signals
+  --string              Print sysEx logging message (For Qun Mk2)
+  --everdrive_pro       Format serial data for delivery to the Mega Everdrive PRO
 ```
 
 2. Figure out serial port name and baud rate. Baud rate default is 115200.
