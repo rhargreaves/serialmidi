@@ -20,6 +20,7 @@ parser.add_argument("--midi_in_name", type=str, default = "IAC Bus 1")
 parser.add_argument("--midi_out_name", type=str, default = "IAC Bus 2")
 parser.add_argument("--debug", action = "store_true", help = "Print incoming / outgoing MIDI signals")
 parser.add_argument("--string", action = "store_true", help = "Print sysEx logging message (For Qun Mk2)")
+parser.add_argument("--everdrive_pro", action = "store_true", help = "Format serial data for delivery to the Mega Everdrive PRO")
 
 args = parser.parse_args()
 
@@ -62,6 +63,12 @@ def get_midi_length(message):
 
     return 100
 
+def wrap_message_for_mega_pro(message):
+    header = bytes([0x2b, 0xd4, 0x1a, 0xe5, 0x01, 0x81, 0x00, 0x00])
+    len_bytes = len(message).to_bytes(4, 'big')
+    padding = bytes([0x00])
+    return header + len_bytes + padding + message
+
 def serial_writer():
     while midi_ready == False:
         time.sleep(0.1)
@@ -72,6 +79,8 @@ def serial_writer():
             continue
         logging.debug(message)
         value = bytearray(message)
+        if args.everdrive_pro:
+            value = wrap_message_for_mega_pro(value)
         ser.write(value)
 
 def serial_watcher():
@@ -132,6 +141,8 @@ def midi_watcher():
     available_ports_in = midiin.get_ports()
     logging.info("IN : '" + "','".join(available_ports_in) + "'")
     logging.info("OUT : '" + "','".join(available_ports_out) + "'")
+    if args.everdrive_pro:
+        logging.info("Mega Everdrive PRO mode enabled")
     logging.info("Hit ctrl-c to exit")
 
     port_index_in = -1
