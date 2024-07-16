@@ -1,9 +1,9 @@
 # serialmidi
 
+Originally written by [raspy135](https://github.com/raspy135/serialmidi). Forked by [rhargreaves](https://github.com/rhargreaves/serialmidi) to add support for the Everdrive PRO.
+
 This command line script establishes Serial to MIDI bridge.
 It will be useful with micro controller boards such as Arduino, ESP32, they only have UART-USB interface.
-
-I made this since useful [Hairless MIDI Serial bridge](https://github.com/projectgus/hairless-midiserial) program stopped working with OS X Catalina.
 
 It processes most of MIDI messages. It has only very low latency (probably less than 5ms) so far.
 
