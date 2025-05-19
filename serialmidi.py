@@ -77,7 +77,7 @@ def serial_writer():
             message = midiin_message_queue.get(timeout=0.4)
         except queue.Empty:
             continue
-        logging.debug(message)
+        logging.debug("out: " + str(message))
         value = bytearray(message)
         if args.everdrive_pro:
             value = wrap_message_for_mega_pro(value)
@@ -104,7 +104,7 @@ def serial_watcher():
 
             message_length = get_midi_length(receiving_message)
             if message_length <= len(receiving_message):
-                logging.debug(receiving_message)
+                logging.debug("in: " + str(receiving_message))
                 midiout_message_queue.put(receiving_message)
 
                 if args.string:
