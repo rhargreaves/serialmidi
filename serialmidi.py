@@ -10,7 +10,7 @@ import argparse
 
 # Serial MIDI Bridge
 # Original work Copyright 2020 Ryan Kojima
-# Modified work Copyright 2024 Robert [Your Last Name]
+# Modified work Copyright 2024 Robert Hargreaves
 # Licensed under Apache License 2.0
 
 
