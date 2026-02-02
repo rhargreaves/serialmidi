@@ -9,65 +9,82 @@ import time
 import argparse
 
 # Serial MIDI Bridge
-# Ryan Kojima
+# Original work Copyright 2020 Ryan Kojima
+# Modified work Copyright 2024 Robert [Your Last Name]
+# Licensed under Apache License 2.0
 
 
-parser = argparse.ArgumentParser(description = "Serial MIDI bridge")
+parser = argparse.ArgumentParser(description="Serial MIDI bridge")
 
-parser.add_argument("--serial_name", type=str, required = True, help = "Serial port name. Required")
-parser.add_argument("--baud", type=int, default=115200, help = "baud rate. Default is 115200")
-parser.add_argument("--midi_in_name", type=str, default = "IAC Bus 1")
-parser.add_argument("--midi_out_name", type=str, default = "IAC Bus 2")
-parser.add_argument("--debug", action = "store_true", help = "Print incoming / outgoing MIDI signals")
-parser.add_argument("--string", action = "store_true", help = "Print sysEx logging message (For Qun Mk2)")
-parser.add_argument("--everdrive_pro", action = "store_true", help = "Format serial data for delivery to the Mega Everdrive PRO")
+parser.add_argument(
+    "--serial_name", type=str, required=True, help="Serial port name. Required"
+)
+parser.add_argument(
+    "--baud", type=int, default=115200, help="baud rate. Default is 115200"
+)
+parser.add_argument("--midi_in_name", type=str, default="IAC Bus 1")
+parser.add_argument("--midi_out_name", type=str, default="IAC Bus 2")
+parser.add_argument(
+    "--debug", action="store_true", help="Print incoming / outgoing MIDI signals"
+)
+parser.add_argument(
+    "--string", action="store_true", help="Print sysEx logging message (For Qun Mk2)"
+)
+parser.add_argument(
+    "--everdrive_pro",
+    action="store_true",
+    help="Format serial data for delivery to the Mega Everdrive PRO",
+)
 
 args = parser.parse_args()
 
 thread_running = True
 
 # Arguments
-serial_port_name = args.serial_name #'/dev/cu.SLAB_USBtoUART'
+serial_port_name = args.serial_name  #'/dev/cu.SLAB_USBtoUART'
 serial_baud = args.baud
-given_port_name_in = args.midi_in_name #"IAC Bus 1"
-given_port_name_out = args.midi_out_name #"IAC Bus 2"
+given_port_name_in = args.midi_in_name  # "IAC Bus 1"
+given_port_name_out = args.midi_out_name  # "IAC Bus 2"
 
 if args.debug:
-    logging.basicConfig(level = logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG)
 else:
-    logging.basicConfig(level = logging.INFO)
+    logging.basicConfig(level=logging.INFO)
 
 midi_ready = False
 midiin_message_queue = queue.Queue()
 midiout_message_queue = queue.Queue()
 
+
 def get_midi_length(message):
     if len(message) == 0:
         return 100
     opcode = message[0]
-    if opcode >= 0xf4:
+    if opcode >= 0xF4:
         return 1
-    if opcode in [ 0xf1, 0xf3 ]:
+    if opcode in [0xF1, 0xF3]:
         return 2
-    if opcode == 0xf2:
+    if opcode == 0xF2:
         return 3
-    if opcode == 0xf0:
-        if message[-1] == 0xf7:
+    if opcode == 0xF0:
+        if message[-1] == 0xF7:
             return len(message)
 
-    opcode = opcode & 0xf0
-    if opcode in [ 0x80, 0x90, 0xa0, 0xb0, 0xe0 ]:
+    opcode = opcode & 0xF0
+    if opcode in [0x80, 0x90, 0xA0, 0xB0, 0xE0]:
         return 3
-    if opcode in [ 0xc0, 0xd0 ]:
+    if opcode in [0xC0, 0xD0]:
         return 2
 
     return 100
 
+
 def wrap_message_for_mega_pro(message):
-    header = bytes([0x2b, 0xd4, 0x1a, 0xe5, 0x01, 0x81, 0x00, 0x00])
-    len_bytes = len(message).to_bytes(4, 'big')
+    header = bytes([0x2B, 0xD4, 0x1A, 0xE5, 0x01, 0x81, 0x00, 0x00])
+    len_bytes = len(message).to_bytes(4, "big")
     padding = bytes([0x00])
     return header + len_bytes + padding + message
+
 
 def serial_writer():
     while midi_ready == False:
@@ -83,6 +100,7 @@ def serial_writer():
             value = wrap_message_for_mega_pro(value)
         ser.write(value)
 
+
 def serial_watcher():
     receiving_message = []
     running_status = 0
@@ -95,12 +113,12 @@ def serial_watcher():
         if data:
             for elem in data:
                 receiving_message.append(elem)
-            #Running status
+            # Running status
             if len(receiving_message) == 1:
-                if (receiving_message[0]&0xf0) != 0:
+                if (receiving_message[0] & 0xF0) != 0:
                     running_status = receiving_message[0]
                 else:
-                    receiving_message = [ running_status, receiving_message[0] ]
+                    receiving_message = [running_status, receiving_message[0]]
 
             message_length = get_midi_length(receiving_message)
             if message_length <= len(receiving_message):
@@ -108,15 +126,14 @@ def serial_watcher():
                 midiout_message_queue.put(receiving_message)
 
                 if args.string:
-                    if receiving_message[0] == 0xf0:
+                    if receiving_message[0] == 0xF0:
                         print_message = []
                         for elem in receiving_message:
-                            if elem < 0xf0:
+                            if elem < 0xF0:
                                 print_message.append(chr(elem))
-                        print_message_str = ''.join(print_message)
+                        print_message_str = "".join(print_message)
                         print(print_message_str)
                 receiving_message = []
-
 
 
 class midi_input_handler(object):
@@ -127,9 +144,8 @@ class midi_input_handler(object):
     def __call__(self, event, data=None):
         message, deltatime = event
         self._wallclock += deltatime
-        #logging.debug("[%s] @%0.6f %r" % (self.port, self._wallclock, message))
+        # logging.debug("[%s] @%0.6f %r" % (self.port, self._wallclock, message))
         midiin_message_queue.put(message)
-
 
 
 def midi_watcher():
@@ -168,19 +184,19 @@ def midi_watcher():
 
     midi_ready = True
 
-    midiin.ignore_types(sysex = False, timing = False, active_sense = False)
+    midiin.ignore_types(sysex=False, timing=False, active_sense=False)
     midiin.set_callback(midi_input_handler(in_port_name))
 
     while thread_running:
         try:
-            message = midiout_message_queue.get(timeout = 0.4)
+            message = midiout_message_queue.get(timeout=0.4)
         except queue.Empty:
             continue
         midiout.send_message(message)
 
 
 try:
-    ser = serial.Serial(serial_port_name,serial_baud)
+    ser = serial.Serial(serial_port_name, serial_baud)
 except serial.serialutil.SerialException:
     print("Serial port opening error.")
     midi_watcher()
@@ -188,15 +204,15 @@ except serial.serialutil.SerialException:
 
 ser.timeout = 0.4
 
-s_watcher = threading.Thread(target = serial_watcher)
-s_writer = threading.Thread(target = serial_writer)
-m_watcher = threading.Thread(target = midi_watcher)
+s_watcher = threading.Thread(target=serial_watcher)
+s_writer = threading.Thread(target=serial_writer)
+m_watcher = threading.Thread(target=midi_watcher)
 
 s_watcher.start()
 s_writer.start()
 m_watcher.start()
 
-#Ctrl-C handler
+# Ctrl-C handler
 try:
     while True:
         time.sleep(1)
